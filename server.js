@@ -3,41 +3,23 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
+
+const Product = require("./models/product");
+const Cart = require("./models/cart");
+
 const app = express();
-const PORT = 5000; 
+const PORT = 5000;
 
 
 app.use(bodyParser.json());
 app.use(cors());
 
 
-mongoose.connect("mongodb://127.0.0.1:27017/ecofinds", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log(" MongoDB connected"))
-.catch(err => console.error(" MongoDB connection error:", err));
+mongoose.connect("mongodb://127.0.0.1:27017/ecofinds")
+  .then(() => console.log(" MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
 
-const productSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  category: String,
-  price: Number,
-  image: String, // placeholder for now
-});
-
-const cartSchema = new mongoose.Schema({
-  userId: String, // later link with authentication
-  products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-});
-
-const Product = mongoose.model("Product", productSchema);
-const Cart = mongoose.model("Cart", cartSchema);
-
-
-
-// Get all products (Browsing)
 app.get("/products", async (req, res) => {
   try {
     const products = await Product.find();
@@ -47,21 +29,21 @@ app.get("/products", async (req, res) => {
   }
 });
 
+
 app.get("/products/search", async (req, res) => {
+  const keyword = req.query.q;
   try {
-    const keyword = req.query.q;
-    const results = await Product.find({
-      title: { $regex: keyword, $options: "i" },
-    });
+    const results = await Product.find({ title: { $regex: keyword, $options: "i" } });
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: "Search failed" });
   }
 });
 
+
 app.get("/products/category/:category", async (req, res) => {
+  const category = req.params.category;
   try {
-    const category = req.params.category;
     const results = await Product.find({ category });
     res.json(results);
   } catch (err) {
@@ -79,13 +61,12 @@ app.get("/cart/:userId", async (req, res) => {
   }
 });
 
+
 app.post("/cart/:userId/add", async (req, res) => {
+  const { productId } = req.body;
   try {
-    const { productId } = req.body;
     let cart = await Cart.findOne({ userId: req.params.userId });
-    if (!cart) {
-      cart = new Cart({ userId: req.params.userId, products: [] });
-    }
+    if (!cart) cart = new Cart({ userId: req.params.userId, products: [] });
     cart.products.push(productId);
     await cart.save();
     res.json(cart);
@@ -94,9 +75,10 @@ app.post("/cart/:userId/add", async (req, res) => {
   }
 });
 
+
 app.post("/cart/:userId/remove", async (req, res) => {
+  const { productId } = req.body;
   try {
-    const { productId } = req.body;
     let cart = await Cart.findOne({ userId: req.params.userId });
     if (cart) {
       cart.products = cart.products.filter(p => p.toString() !== productId);
@@ -107,6 +89,7 @@ app.post("/cart/:userId/remove", async (req, res) => {
     res.status(500).json({ error: "Failed to remove from cart" });
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(` Server running on http://localhost:${PORT}`);
