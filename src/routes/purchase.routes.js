@@ -1,5 +1,10 @@
 import express from "express";
-import { addToCart, viewCart, checkout, getPurchases } from "../controllers/purchase.controller.js";
+import {
+  addToCart,
+  viewCart,
+  checkout,
+  getPurchases,
+} from "../controllers/purchase.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
